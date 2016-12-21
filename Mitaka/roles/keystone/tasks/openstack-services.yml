@@ -1,0 +1,14 @@
+- name: Creating OpenStack Services
+  environment: openstack_env
+  command: "{{item}}"
+  with_items:
+  - openstack service create --name keystone --description "OpenStack Identity" identity
+  - openstack service create --name glance --description "OpenStack Image service" image
+  - openstack service create --name nova --description "OpenStack Compute" compute
+  - openstack service create --name neutron --description "OpenStack Networking" network
+  - openstack service create --name heat --description "Orchestration" orchestration
+  - openstack service create --name heat-cfn --description "Orchestration"  cloudformation
+  - openstack service create --name barbican --description "Key Manager" key-manager
+  - openstack service create --name magnum --description "Container Service" container
+  when: keystone_started|changed
+  register: openstack_srvc_ready

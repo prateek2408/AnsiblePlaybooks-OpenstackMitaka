@@ -1,0 +1,54 @@
+linuxnet_interface_driver: "neutron.agent.linux.interface.OVSInterfaceDriver"
+neutron_interface_driver: "neutron.agent.linux.interface.OVSInterfaceDriver"
+mechanism_drivers: "openvswitch"
+firewall_driver: "neutron.agent.linux.iptables_firewall.IptablesFirewallDriver"
+
+
+data_port_network_ip: "192.168.56.103"
+data_port_compute_ip: "192.168.56.104"
+
+public_addr: "controller"
+controller_addr: "controller"
+
+your_domain: "example.com"
+
+region: "RegionOne"
+
+admin_token: "test123"
+
+admin_password: "admin_pass"
+service_password: "service_pass"
+demo_password: "demo_pass"
+
+rabbit_userid: "openstack"
+rabbit_password: "RABBIT_PASS"
+
+metadata_secret: "UltraMeta13"
+
+openstack_env:
+  OS_TOKEN: "test123"
+  OS_URL: "http://192.168.56.102:35357/v3"
+  OS_IDENTITY_API_VERSION: "3"
+
+install_env:
+  DEBIAN_FRONTEND: "noninteractive"
+
+admin_openrc_env:
+  OS_PROJECT_DOMAIN_NAME: "default"
+  OS_USER_DOMAIN_NAME: "default"
+  OS_PROJECT_NAME: "admin"
+  OS_USERNAME: "admin"
+  OS_PASSWORD: "admin_pass"
+  OS_AUTH_URL: "http://controller:35357/v3"
+  OS_IDENTITY_API_VERSION: "3"
+  OS_IMAGE_API_VERSION: "2"
+
+mysql_databases:
+  - { os_project: "keystone", db_name: "keystone", db_host: "%", db_user: "keystoneUser", db_pass: "keystonePass" }
+  - { os_project: "glance", db_name: "glance", db_host: "%", db_user: "glanceUser", db_pass: "glancePass" }
+  - { os_project: "nova", db_name: "nova", db_host: "%", db_user: "novaUser", db_pass: "novaPass" }
+  - { os_project: "nova-api", db_name: "nova-api", db_host: "%", db_user: "novapiUser", db_pass: "novaPass" }
+  - { os_project: "neutron", db_name: "neutron", db_host: "%", db_user: "neutronUser", db_pass: "neutronPass" }
+  - { os_project: "heat", db_name: "heat", db_host: "%", db_user: "heatUser", db_pass: "heatPass" }
+  - { os_project: "barbican", db_name: "barbican", db_host: "%", db_user: "barbicanUser", db_pass: "barbicanPass" }
+  - { os_project: "magnum", db_name: "magnum", db_host: "%", db_user: "magnumUser", db_pass: "magnumPass" }

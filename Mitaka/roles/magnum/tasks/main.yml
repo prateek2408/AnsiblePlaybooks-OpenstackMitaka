@@ -1,0 +1,43 @@
+- name: Installing Magnum
+  environment: install_env
+  action: apt pkg={{item}} state=installed
+  with_items:
+    - magnum-api 
+    - magnum-conductor
+  register: magnum_installed
+
+- name: Stopping Magnum Api Service
+  service: name=magnum-api state=stopped
+  when: magnum_installed|changed
+  register: api_stopped
+
+- name: Stopping Magnum Conductor Service
+  service: name=magnum-conductor state=stopped
+  when: magnum_installed|changed
+  register: conductor_stopped
+
+- name: Updating magnum.conf
+  template: src=magnum.conf
+        dest=/etc/magnum/magnum.conf
+        owner=magnum
+        group=magnum
+        mode=0640
+        backup=yes
+  when: magnum_installed|changed and item.os_project == "magnum"
+  with_items: mysql_databases
+  register: magnum_cfg_updated
+
+- name: Populating Magnum Database
+  shell: su -s /bin/sh -c "magnum-db-manage upgrade" magnum
+  register: magnum_populated
+  when: magnum_cfg_updated|changed
+
+- name: Starting magnum Api Service
+  service: name=magnum-api state=restart
+  when: magnum_populated|changed
+  register: api_started
+
+- name: Starting Magnum Conductor Service
+  service: name=magnum-conductor state=restart
+  when: magnum_populated|changed
+  register: conductor_started

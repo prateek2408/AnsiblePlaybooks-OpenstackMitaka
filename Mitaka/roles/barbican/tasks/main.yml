@@ -1,0 +1,54 @@
+- name: Installing Barbican
+  action: apt pkg={{item}} state=installed
+  with_items:
+    - barbican-api 
+    - barbican-keystone-listener 
+    - barbican-worker
+  register: barbican_installed
+
+- name: Stopping Barbican Api Service
+  service: name=barbican-worker state=stopped
+  when: barbican_installed|changed
+  register: api_stopped
+
+- name: Stopping Barbican keystone listener Service
+  service: name=barbican-keystone-listener state=stopped
+  when: barbican_installed|changed
+  register: listner_stopped
+
+- name: Updating barbican.conf
+  template: src=barbican.conf
+        dest=/etc/barbican/barbican.conf
+        owner=barbican
+        group=barbican
+        mode=0640
+        backup=yes
+  when: barbican_installed|changed and item.os_project == "barbican"
+  with_items: mysql_databases
+  register: barbican_cfg_updated
+
+- name: Updating barbican-api-paste.ini
+  template: src=barbican-api-paste.ini
+        dest=/etc/barbican/barbican-api-paste.ini
+        owner=barbican
+        group=barbican
+        mode=0640
+        backup=yes
+  when: barbican_installed|changed and item.os_project == "barbican"
+  with_items: mysql_databases
+  register: barbican_ini_updated
+
+- name: Populating Barbican Database
+  shell: su -s /bin/sh -c "barbican-manage db upgrade" barbican
+  register: barbican_populated
+  when: barbican_cfg_updated|changed
+
+- name: Starting Barbican Api Service
+  service: name=barbican-worker state=restart
+  when: barbican_populated|changed
+  register: api_started
+
+- name: Starting Barbican keystone listener Service
+  service: name=barbican-keystone-listener state=restart
+  when: barbican_populated|changed
+  register: listner_started

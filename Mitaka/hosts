@@ -1,0 +1,9 @@
+[controller_nodes]
+192.168.56.102
+
+[network_nodes]
+192.168.56.103
+
+[compute_nodes]
+192.168.56.104
+

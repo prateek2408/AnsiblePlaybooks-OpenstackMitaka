@@ -1,0 +1,66 @@
+- name: Installing Neutron compute Agents
+  action: apt pkg={{item}} state=installed
+  with_items:
+    - neutron-plugin-openvswitch-agent
+  register: neutron_installed
+
+- name: Stopping Neutron compute Agents
+  command: "{{item}}"
+  with_items:
+    - service neutron-openvswitch-agent stop
+  ignore_errors: yes
+  when: neutron_installed|changed
+  register: neutron_stopped
+
+- name: Updating neutron.conf
+  template: src=neutron.conf
+            dest=/etc/neutron/neutron.conf
+            owner=root
+            group=neutron
+            mode=0640
+            backup=yes
+  when: neutron_stopped|changed
+  with_items: mysql_databases
+  register: neutron_cfg_updated
+
+- name: Updating ml2_conf.ini for Open vSwitch
+  template: src=ml2_conf.ini_ovs
+            dest=/etc/neutron/plugins/ml2/ml2_conf.ini
+            owner=root
+            group=neutron
+            mode=0640
+            backup=yes
+  when: neutron_stopped|changed
+  register: ml2_cfg_ovs_updated
+
+- name: Updating ovs agent file for Open vSwitch
+  template: src=ml2_conf.ini_ovs
+            dest=/etc/neutron/plugins/ml2/openvswitch_agent.ini
+            owner=root
+            group=neutron
+            mode=0640
+            backup=yes
+  when: neutron_stopped|changed
+  register: ml2_cfg_ovs_updated
+
+- name: Starting Neutron compute Agents
+  command: "{{item}}"
+  with_items:
+    - service neutron-openvswitch-agent restart
+  when: ml2_cfg_ovs_updated and ml2_cfg_ovs_updated and neutron_cfg_updated
+  register: neutron_started
+
+- name: Wait a bit until Neutron starts up properly...
+  pause: seconds=5
+  when: neutron_started|changed
+  register: neutron_ready
+
+- name: Write custom sysctl.conf
+  copy: src=sysctl.conf
+        dest=/etc/sysctl.conf
+        owner=root
+        group=root
+        mode=0644
+        backup=yes
+  notify:
+    - Reload sysctl

@@ -1,0 +1,57 @@
+- name: Installing Neutron Server and Agents
+  action: apt pkg={{item}} state=installed
+  with_items:
+    - neutron-server
+    - python-neutronclient
+  register: neutron_installed
+
+- name: Stopping Neutron Server and Agents
+  command: "{{item}}"
+  with_items:
+    - service neutron-server stop
+  ignore_errors: yes
+  when: neutron_installed|changed
+  register: neutron_stopped
+
+- name: Removing non-used sqlite database
+  file: path=/var/lib/neutron/neutron.sqlite state=absent
+  when: neutron_installed|changed
+  register: neutron_cleaned
+
+- name: Updating neutron.conf
+  template: src=neutron.conf
+            dest=/etc/neutron/neutron.conf
+            owner=root
+            group=neutron
+            mode=0640
+            backup=yes
+  when: neutron_stopped|changed and item.os_project == "neutron"
+  with_items: mysql_databases
+  register: neutron_cfg_updated
+
+- name: Updating ml2_conf.ini for Open vSwitch
+  template: src=ml2_conf.ini_ovs
+            dest=/etc/neutron/plugins/ml2/ml2_conf.ini
+            owner=root
+            group=neutron
+            mode=0640
+            backup=yes
+  when: neutron_stopped|changed
+  register: ml2_cfg_ovs_updated
+
+- name: Populating Neutron Database
+  shell: su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
+  when: neutron_cfg_updated|changed or ml2_cfg_ovs_updated|changed
+  register: neutron_populated
+
+- name: Starting Neutron Server and Agents
+  command: "{{item}}"
+  with_items:
+    - service neutron-server start
+  when: neutron_populated|changed
+  register: neutron_started
+
+- name: Wait a bit until Neutron starts up properly...
+  pause: seconds=5
+  when: neutron_started|changed
+  register: neutron_ready

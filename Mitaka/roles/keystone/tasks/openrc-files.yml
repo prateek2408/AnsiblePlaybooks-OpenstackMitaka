@@ -1,0 +1,13 @@
+- name: Creating admin-openrc.sh file
+  template: src=admin-openrc.sh
+            dest=/root/admin-openrc.sh
+            owner=root
+            group=root
+            mode=0640
+
+- name: Creating demo-openrc.sh file
+  template: src=demo-openrc.sh
+            dest=/root/demo-openrc.sh
+            owner=root
+            group=root
+            mode=0640

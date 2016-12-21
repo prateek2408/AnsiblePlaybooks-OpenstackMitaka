@@ -1,0 +1,30 @@
+[ml2]
+type_drivers = local,flat,vlan,gre,vxlan
+tenant_network_types = flat,vlan,vxlan,gre
+mechanism_drivers = {{mechanism_drivers}},l2population
+
+[ml2_type_flat]
+flat_networks = external
+
+[ml2_type_vlan]
+network_vlan_ranges = physnet1:1000:2999
+
+[ml2_type_gre]
+tunnel_id_ranges = 1:1000
+
+[ml2_type_vxlan]
+vni_ranges = 1:1000
+
+[securitygroup]
+enable_security_group = True
+enable_ipset = True
+
+[ovs]
+local_ip = {{data_port_compute_ip}}
+enable_tunneling = True
+
+[agent]
+tunnel_types = gre
+
+[l2pop]
+agent_boot_time = 180

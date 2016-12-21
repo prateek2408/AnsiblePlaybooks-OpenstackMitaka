@@ -1,0 +1,53 @@
+- name: Installing Nova compute packages
+  action: apt pkg={{item}} state=installed
+  with_items:
+    - nova-compute
+    - sysfsutils
+    - iptables
+    - ipset
+    - pm-utils
+    - ubuntu-virt-server
+  register: nova_installed
+
+
+- name: Stopping all Nova services
+  command: "{{item}}"
+  with_items:
+    - service nova-compute stop
+  ignore_errors: yes
+  when: nova_installed|changed
+  register: nova_stopped
+
+- name: Updating nova.conf
+  template: src=nova.conf
+        dest=/etc/nova/nova.conf
+        owner=nova
+        group=nova
+        mode=0640
+        backup=yes
+  when: nova_stopped|changed
+  with_items: mysql_databases
+  register: nova_cfg_updated
+
+- name: Updating nova-compute.conf
+  template: src=nova-compute.conf
+        dest=/etc/nova/nova-compute.conf
+        owner=nova
+        group=nova
+        mode=0640
+        backup=yes
+  when: nova_stopped|changed
+  register: novac_cfg_updated
+
+- name: Starting all Nova services
+  command: "{{item}}"
+  with_items:
+    - service nova-compute start
+  when: nova_stopped|changed
+  register: nova_started
+
+
+- name: Wait a bit until Nova starts up properly...
+  pause: seconds=5
+  when: nova_started|changed
+  register: nova_ready

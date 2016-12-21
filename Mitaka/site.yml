@@ -1,0 +1,28 @@
+- hosts: controller_nodes
+  user: root
+  roles:
+  - role: bootstrap
+  - role: mysql
+  - role: rabbitmq
+  - role: memcached
+  - role: apache2
+  - role: keystone
+  - role: glance
+  - role: novacon
+  - role: neutroncon
+  - role: heat
+  - role: magnum
+  - role: horizon
+
+- hosts: network_nodes
+  user: root
+  roles:
+  - role: bootstrap
+  - role: neutronnetwork
+
+- hosts: compute_nodes
+  user: root
+  roles:
+  - role: bootstrap
+  - role: novacompute
+  - role: neutroncompute

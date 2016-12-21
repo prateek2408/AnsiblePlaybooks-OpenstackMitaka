@@ -1,0 +1,82 @@
+- name: Installing Nova packages
+  action: apt pkg={{item}} state=installed
+  with_items:
+    - nova-api
+    - nova-cert
+    - nova-conductor
+    - nova-consoleauth
+    - nova-novncproxy
+    - nova-scheduler
+    - python-novaclient
+  register: nova_installed
+
+
+- name: Stopping all Nova services
+  command: "{{item}}"
+  with_items:
+    - service nova-api stop
+    - service nova-cert stop
+    - service nova-conductor stop
+    - service nova-consoleauth stop
+    - service nova-scheduler stop
+    - service nova-novncproxy stop
+  ignore_errors: yes
+  when: nova_installed|changed
+  register: nova_stopped
+
+
+- name: Removing non-used sqlite database
+  file: path=/var/lib/nova/nova.sqlite state=absent
+  when: nova_stopped|changed
+  register: nova_cleaned
+
+
+- name: Updating nova.conf
+  template: src=nova.conf
+        dest=/etc/nova/nova.conf
+        owner=nova
+        group=nova
+        mode=0640
+        backup=yes
+  when: nova_stopped|changed and item.os_project == "nova"
+  with_items: mysql_databases
+  register: nova_cfg_updated
+
+
+- name: Updating nova-compute.conf
+  template: src=nova-compute.conf
+        dest=/etc/nova/nova-compute.conf
+        owner=nova
+        group=nova
+        mode=0640
+        backup=yes
+  when: nova_stopped|changed
+  register: novac_cfg_updated
+
+- name: Populating Nova Database
+  shell: su -s /bin/sh -c "nova-manage db sync" nova
+  when: nova_stopped|changed and novac_cfg_updated|changed
+  register: nova_populated
+
+- name: Populating Nova api Database
+  shell: su -s /bin/sh -c "nova-manage api_db sync" nova
+  when: nova_stopped|changed and novac_cfg_updated|changed
+  register: nova_populated
+
+- name: Starting all Nova services
+  command: "{{item}}"
+  with_items:
+    - service nova-api start
+    - service nova-cert start
+    - service nova-conductor start
+    - service nova-consoleauth start
+    - service nova-scheduler start
+    - service nova-novncproxy start
+  when: nova_populated|changed and nova_stopped|changed
+  register: nova_started
+
+
+- name: Wait a bit until Nova starts up properly...
+  pause: seconds=5
+  when: nova_started|changed
+  register: nova_ready
